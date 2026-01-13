@@ -1,0 +1,15 @@
+{
+  "Group": "HytaleOne",
+  "Name": "Query",
+  "Version": "1.0.0",
+  "Authors": [
+    {
+      "Name": "HytaleOne",
+      "Url": "https://hytale.one"
+    }
+  ],
+  "Website": "https://hytale.one",
+  "Main": "dev.hytaleone.query.HytaleOneQueryPlugin",
+  "ServerVersion": "*",
+  "Description": "Lightweight UDP query protocol for server status"
+}
