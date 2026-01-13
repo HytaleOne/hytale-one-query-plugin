@@ -92,6 +92,21 @@ Offset  Size     Field
 ...     1        Enabled (boolean)
 ```
 
+## Client Libraries
+
+Query servers from your application using these client libraries:
+
+| Language | Package | Status |
+|----------|---------|--------|
+| Node.js / TypeScript | [@hytaleone/query](https://github.com/HytaleOne/query-js) | ✅ Available |
+| Python | - | 🚧 TODO |
+| Go | - | 🚧 TODO |
+| Rust | - | 🚧 TODO |
+| C# / .NET | - | 🚧 TODO |
+| Java | - | 🚧 TODO |
+
+Want to contribute a client library? PRs welcome!
+
 ## Building from Source
 
 ```bash
