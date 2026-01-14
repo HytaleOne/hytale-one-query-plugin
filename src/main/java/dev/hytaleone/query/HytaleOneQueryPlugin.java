@@ -59,7 +59,7 @@ public class HytaleOneQueryPlugin extends JavaPlugin {
 
         // Register with server list service (if enabled)
         if (config.isRegisterOnStartup()) {
-            HytaleOneServerListRegistration.register(getLogger());
+            HytaleOneServerListRegistration.register(getLogger(), config, this::saveConfig);
         } else {
             getLogger().at(Level.INFO).log("Server list registration is disabled");
         }
@@ -99,6 +99,13 @@ public class HytaleOneQueryPlugin extends JavaPlugin {
             module.encode(HytaleOneQueryConfig.CODEC, this.config);
             serverConfig.markChanged();
         }
+    }
+
+    private void saveConfig() {
+        var serverConfig = HytaleServer.get().getConfig();
+        var module = serverConfig.getModule(CONFIG_MODULE);
+        module.encode(HytaleOneQueryConfig.CODEC, this.config);
+        serverConfig.markChanged();
     }
 
     @Nonnull

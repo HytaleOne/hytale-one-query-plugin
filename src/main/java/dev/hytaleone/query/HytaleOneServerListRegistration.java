@@ -6,6 +6,7 @@ import com.hypixel.hytale.protocol.ProtocolSettings;
 import com.hypixel.hytale.server.core.HytaleServer;
 import com.hypixel.hytale.server.core.io.ServerManager;
 import com.hypixel.hytale.server.core.universe.Universe;
+import org.bson.Document;
 
 import javax.annotation.Nonnull;
 import java.net.InetSocketAddress;
@@ -13,6 +14,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.security.SecureRandom;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
@@ -32,14 +34,24 @@ public final class HytaleOneServerListRegistration {
      * Register the server with the server list service.
      * Runs asynchronously to not block server startup.
      */
-    public static void register(@Nonnull HytaleLogger logger) {
+    public static void register(@Nonnull HytaleLogger logger, @Nonnull HytaleOneQueryConfig config, @Nonnull Runnable saveConfig) {
+        // Generate server ID if missing
+        if (config.getServerId() == null || config.getServerId().isBlank()) {
+            String newId = "hytaleone_" + generateRandomHex(32);
+            config.setServerId(newId);
+            saveConfig.run();
+            logger.at(Level.FINE).log("Generated new server ID: %s", newId);
+        }
+
+        final String serverId = config.getServerId();
 
         CompletableFuture.runAsync(() -> {
             try {
-                String json = buildPayload();
+                String json = buildPayload(serverId);
 
                 HttpClient client = HttpClient.newBuilder()
                         .connectTimeout(TIMEOUT)
+                        .version(HttpClient.Version.HTTP_1_1)
                         .build();
 
                 HttpRequest request = HttpRequest.newBuilder()
@@ -53,7 +65,7 @@ public final class HytaleOneServerListRegistration {
                         HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                    logger.at(Level.INFO).log("Server registered with hytale.one");
+                    handleSuccessResponse(logger, response.body());
                 } else {
                     logger.at(Level.WARNING).log("Server list registration failed (status: %d)",
                             response.statusCode());
@@ -65,28 +77,90 @@ public final class HytaleOneServerListRegistration {
     }
 
     /**
+     * Handle successful registration response.
+     */
+    private static void handleSuccessResponse(@Nonnull HytaleLogger logger, @Nonnull String body) {
+        String url = null;
+        boolean claimed = false;
+
+        try {
+            Document doc = Document.parse(body);
+            url = doc.getString("url");
+            claimed = doc.getBoolean("claimed", false);
+        } catch (Exception e) {
+            // Response parsing failed, just log simple message
+        }
+
+        if (claimed) {
+            printClaimedMessage(logger, url);
+        } else if (url != null && !url.isBlank()) {
+            printPromotion(logger, url);
+        } else {
+            logger.at(Level.INFO).log("Server registered with hytale.one");
+        }
+    }
+
+    /**
+     * Print message for claimed servers.
+     */
+    private static void printClaimedMessage(@Nonnull HytaleLogger logger, String url) {
+        logger.at(Level.INFO).log("");
+        logger.at(Level.INFO).log("Your server is listed on hytale.one server list!");
+        if (url != null && !url.isBlank()) {
+            logger.at(Level.INFO).log("Manage your server: %s", url);
+        }
+        logger.at(Level.INFO).log("");
+    }
+
+    /**
+     * Print promotional message to encourage claiming.
+     */
+    private static void printPromotion(@Nonnull HytaleLogger logger, @Nonnull String url) {
+        logger.at(Level.INFO).log("");
+        logger.at(Level.INFO).log("╔═══════════════════════════════════════════════════════════════════════════╗");
+        logger.at(Level.INFO).log("║  Get more players! Your server is waiting to be discovered.              ║");
+        logger.at(Level.INFO).log("║                                                                           ║");
+        logger.at(Level.INFO).log("║  Claim your server on hytale.one to:                                      ║");
+        logger.at(Level.INFO).log("║    - Appear in the server list and attract new players                    ║");
+        logger.at(Level.INFO).log("║    - Add banners, descriptions, and showcase your community               ║");
+        logger.at(Level.INFO).log("║                                                                           ║");
+        logger.at(Level.INFO).log("║  Claim now: %-63s ║", url);
+        logger.at(Level.INFO).log("╚═══════════════════════════════════════════════════════════════════════════╝");
+        logger.at(Level.INFO).log("");
+    }
+
+    /**
+     * Generate random hex string for server ID.
+     */
+    private static String generateRandomHex(int length) {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[length / 2];
+        random.nextBytes(bytes);
+        StringBuilder sb = new StringBuilder();
+        for (byte b : bytes) {
+            sb.append(String.format("%02x", b));
+        }
+        return sb.toString();
+    }
+
+    /**
      * Build the JSON payload with server information.
      */
-    private static String buildPayload() {
+    private static String buildPayload(@Nonnull String serverId) {
         var config = HytaleServer.get().getConfig();
 
-        String host = getHostAddress();
-        int port = getHostPort();
+        Document doc = new Document()
+                .append("serverId", serverId)
+                .append("serverName", config.getServerName())
+                .append("motd", config.getMotd())
+                .append("host", getHostAddress())
+                .append("port", getHostPort())
+                .append("maxPlayers", config.getMaxPlayers())
+                .append("currentPlayers", Universe.get().getPlayerCount())
+                .append("version", getVersion())
+                .append("protocolVersion", ProtocolSettings.PROTOCOL_VERSION);
 
-        // Manual JSON building to avoid external dependencies
-        StringBuilder json = new StringBuilder();
-        json.append("{");
-        json.append("\"serverName\":").append(escapeJson(config.getServerName())).append(",");
-        json.append("\"motd\":").append(escapeJson(config.getMotd())).append(",");
-        json.append("\"host\":").append(escapeJson(host)).append(",");
-        json.append("\"port\":").append(port).append(",");
-        json.append("\"maxPlayers\":").append(config.getMaxPlayers()).append(",");
-        json.append("\"currentPlayers\":").append(Universe.get().getPlayerCount()).append(",");
-        json.append("\"version\":").append(escapeJson(getVersion())).append(",");
-        json.append("\"protocolVersion\":").append(ProtocolSettings.PROTOCOL_VERSION);
-        json.append("}");
-
-        return json.toString();
+        return doc.toJson();
     }
 
     private static String getVersion() {
@@ -114,33 +188,5 @@ public final class HytaleOneServerListRegistration {
         } catch (Exception ignored) {
         }
         return 5520;
-    }
-
-    /**
-     * Escape a string for JSON.
-     */
-    private static String escapeJson(String str) {
-        if (str == null) {
-            return "null";
-        }
-        StringBuilder sb = new StringBuilder("\"");
-        for (char c : str.toCharArray()) {
-            switch (c) {
-                case '"' -> sb.append("\\\"");
-                case '\\' -> sb.append("\\\\");
-                case '\n' -> sb.append("\\n");
-                case '\r' -> sb.append("\\r");
-                case '\t' -> sb.append("\\t");
-                default -> {
-                    if (c < 32) {
-                        sb.append(String.format("\\u%04x", (int) c));
-                    } else {
-                        sb.append(c);
-                    }
-                }
-            }
-        }
-        sb.append("\"");
-        return sb.toString();
     }
 }
