@@ -39,7 +39,7 @@ public class HytaleOneQueryPlugin extends JavaPlugin {
         ServerManager.get().waitForBindComplete();
 
         // Create the shared query handler
-        this.queryHandler = new HytaleOneQueryHandler(getLogger());
+        this.queryHandler = new HytaleOneQueryHandler(getLogger(), getConfig());
 
         // Inject handler into all listener pipelines
         int registered = 0;

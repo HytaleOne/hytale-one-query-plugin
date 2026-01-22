@@ -17,9 +17,11 @@ public class HytaleOneQueryHandler extends ChannelInboundHandlerAdapter {
 
     @Nonnull
     private final HytaleLogger logger;
+    private final HytaleOneQueryConfig config;
 
-    public HytaleOneQueryHandler(@Nonnull HytaleLogger logger) {
+    public HytaleOneQueryHandler(@Nonnull HytaleLogger logger, @Nonnull HytaleOneQueryConfig config) {
         this.logger = logger;
+        this.config = config;
     }
 
     @Override
@@ -50,7 +52,7 @@ public class HytaleOneQueryHandler extends ChannelInboundHandlerAdapter {
                     queryType, request.sender());
 
             ByteBuf response;
-            if (queryType == HytaleOneQueryProtocol.TYPE_FULL) {
+            if (queryType == HytaleOneQueryProtocol.TYPE_FULL && config.isEnableFullQuery()) {
                 response = HytaleOneQueryProtocol.buildFullResponse(ctx.alloc());
             } else {
                 response = HytaleOneQueryProtocol.buildBasicResponse(ctx.alloc());

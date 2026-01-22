@@ -14,10 +14,13 @@ public class HytaleOneQueryConfig {
                     (o, v) -> o.registerOnStartup = v, o -> o.registerOnStartup)
             .addField(new KeyedCodec<>("ServerIdDoNotChange", Codec.STRING),
                     (o, v) -> o.serverId = v, o -> o.serverId)
+            .addField(new KeyedCodec<>("EnableFullQuery", Codec.BOOLEAN),
+                    (o, v) -> o.enableFullQuery = v, o -> o.enableFullQuery)
             .build();
 
-    private boolean registerOnStartup = true;
+    private boolean registerOnStartup = false;
     private String serverId = null;
+    private boolean enableFullQuery = false;
 
     public HytaleOneQueryConfig() {
     }
@@ -42,5 +45,19 @@ public class HytaleOneQueryConfig {
 
     public void setServerId(String serverId) {
         this.serverId = serverId;
+    }
+
+    /**
+     * Though I know I'll never lose affection
+     * For people and things that went before
+     * I know I'll often stop and think about them
+     * In my life, I love you more
+     */
+    public boolean isEnableFullQuery() {
+        return enableFullQuery;
+    }
+
+    public void setEnableFullQuery(boolean register) {
+        this.enableFullQuery = register;
     }
 }

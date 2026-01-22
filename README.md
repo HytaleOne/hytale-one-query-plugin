@@ -19,8 +19,8 @@ Other query plugins use HTTP, which means:
 ## Features
 
 - **Basic Query**: Server name, MOTD, player count, max players, port, version, protocol info
-- **Full Query**: Everything above + player list (names & UUIDs) + plugin list
-- **Server List Registration**: Automatically register with [hytale.one](https://hytale.one/) on startup
+- **Full Query**: Everything above + player list (names & UUIDs) + plugin list (disabled by default)
+- **Server List Registration**: Automatically register with [hytale.one](https://hytale.one/) on startup (disabled by default)
 
 ## Server List
 
@@ -39,14 +39,16 @@ Configuration is stored in your server's config under the `HytaleOneQuery` modul
 ```json
 {
   "HytaleOneQuery": {
-    "RegisterOnStartup": true
+    "RegisterOnStartup": false,
+    "EnableFullQuery": false
   }
 }
 ```
 
 | Option | Default | Description |
 |--------|---------|-------------|
-| `RegisterOnStartup` | `true` | Register with hytale.one server list on startup |
+| `RegisterOnStartup` | `false` | Register with hytale.one server list on startup |
+| `EnableFullQuery` | `false` | Enables Full Query, adding the player and plugin list to the response |
 
 ## Protocol Specification
 
@@ -57,6 +59,8 @@ Offset  Size  Field
 0       8     Magic: "HYQUERY\0" (ASCII)
 8       1     Type: 0x00 = Basic, 0x01 = Full
 ```
+
+If Full Query is disabled, returns Basic.
 
 ### Response Format
 

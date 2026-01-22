@@ -1,11 +1,15 @@
 {
-  "Group": "HytaleOne",
+  "Group": "Hyarchy",
   "Name": "Query",
   "Version": "1.1.0",
   "Authors": [
     {
       "Name": "HytaleOne",
       "Url": "https://hytale.one"
+    },
+    {
+      "Name": "Hyarchy",
+      "Url": "https://hyarchy.com"
     }
   ],
   "Website": "https://hytale.one",
