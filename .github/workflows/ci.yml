@@ -52,7 +52,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: hytaleone-query
+          name: hyarchy-query
           path: dist
 
       - name: Create Release
